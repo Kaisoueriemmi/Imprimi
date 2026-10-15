@@ -81,3 +81,22 @@ pnpm --filter @printbox/agent dev -- run --config ./agent.config.json   # printe
 pnpm --filter @printbox/agent test
 pnpm --filter @printbox/agent package    # bin/printbox-agent.exe (Node ≥ 22 pour construire)
 ```
+
+## Écran de la borne (Chrome en mode kiosque)
+
+Sur le même PC, l'écran affiche le QR code, les instructions en français, arabe et anglais, la
+file d'impression et le paiement en pièces en cours. Avec la session Windows qui s'ouvre
+automatiquement sur la borne (pas en administrateur) :
+
+```powershell
+.\install-kiosk-screen.ps1 -WebUrl https://print.example.tn -KioskId demo-kiosk -DisplayKey pbd_...
+```
+
+Chrome s'ouvre alors en plein écran à chaque ouverture de session (Alt+F4 pour en sortir).
+La clé d'écran `pbd_…` est **différente** de la clé d'agent `pbk_…` : elle ne permet que
+d'afficher l'écran et de générer le QR code. Elle passe dans le fragment d'URL (`#key=…`), que
+le navigateur n'envoie jamais au serveur, puis est mémorisée dans le profil Chrome dédié.
+
+L'écran se met à jour en direct, affiche « Hors service » si l'agent est déconnecté (ou
+l'imprimante / le monnayeur en erreur, ou l'API injoignable plus de 30 s), garde le moniteur
+allumé et se recharge seul chaque nuit à 4 h.
