@@ -9,6 +9,6 @@ import { QrTokenService } from './qr-token.service';
   imports: [JwtModule.register({})],
   controllers: [KiosksController],
   providers: [QrTokenService, KioskDisplayGuard],
-  exports: [QrTokenService],
+  exports: [QrTokenService, KioskDisplayGuard],
 })
 export class KiosksModule {}

@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { ConfiguredIoAdapter } from './common/io-adapter';
 import { AppConfigService } from './config/env';
 
 async function bootstrap(): Promise<void> {
@@ -16,7 +17,9 @@ async function bootstrap(): Promise<void> {
   // Behind Caddy in production: trust the first proxy for client IPs (rate limiting).
   app.set('trust proxy', 1);
   app.use(helmet());
-  app.enableCors({ origin: config.get('CORS_ORIGINS', { infer: true }), credentials: true });
+  const corsOrigins = config.get('CORS_ORIGINS', { infer: true });
+  app.enableCors({ origin: corsOrigins, credentials: true });
+  app.useWebSocketAdapter(new ConfiguredIoAdapter(app, corsOrigins));
   app.setGlobalPrefix('api', { exclude: ['health', 'metrics'] });
   app.enableShutdownHooks();
 

@@ -72,6 +72,7 @@ export class AgentsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     // One agent per kiosk: a new connection (restart, network switch) replaces the old one.
     this.connections.register(kioskId, socket)?.disconnect(true);
     this.logger.log({ kioskId }, 'Kiosk agent connected');
+    this.status.emitChanged(kioskId);
   }
 
   async handleDisconnect(socket: Socket): Promise<void> {

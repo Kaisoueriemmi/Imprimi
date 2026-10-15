@@ -8,6 +8,7 @@ import { bearerToken } from './common/request-context';
 import { CoreModule } from './core.module';
 import { HealthModule } from './health/health.module';
 import { JobsModule } from './jobs/jobs.module';
+import { KioskScreenModule } from './kiosk-screen/kiosk-screen.module';
 import { KiosksModule } from './kiosks/kiosks.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
 import { PaymentsModule } from './payments/payments.module';
@@ -40,6 +41,7 @@ function sessionTracker(req: Record<string, unknown>): string {
     PaymentsModule,
     MaintenanceModule,
     AgentsModule,
+    KioskScreenModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

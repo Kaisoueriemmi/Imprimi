@@ -10,7 +10,13 @@ export const DomainEvent = {
   COIN_SESSION_UPDATED: 'coin.session-updated',
   /** The kiosk must pay money back: change after payment, or refund of abandoned coins. */
   COIN_CHANGE_DUE: 'coin.change-due',
+  /** Agent connected/disconnected, or kiosk status/paper level changed. */
+  KIOSK_CHANGED: 'kiosk.changed',
 } as const;
+
+export interface KioskChangedEvent {
+  kioskId: string;
+}
 
 export interface JobStatusChangedEvent {
   jobId: string;
