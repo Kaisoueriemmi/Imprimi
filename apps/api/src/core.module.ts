@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { LoggerModule } from 'nestjs-pino';
 import { AppConfigService, validateEnv } from './config/env';
 import { buildLoggerParams } from './logging/logger.config';
@@ -22,6 +23,7 @@ import { StorageModule } from './storage/storage.module';
           LOG_LEVEL: config.get('LOG_LEVEL', { infer: true }),
         }),
     }),
+    EventEmitterModule.forRoot(),
     PrismaModule,
     StorageModule,
   ],

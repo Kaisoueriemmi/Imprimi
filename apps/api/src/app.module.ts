@@ -8,6 +8,8 @@ import { CoreModule } from './core.module';
 import { HealthModule } from './health/health.module';
 import { JobsModule } from './jobs/jobs.module';
 import { KiosksModule } from './kiosks/kiosks.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
+import { PaymentsModule } from './payments/payments.module';
 import { SessionsModule } from './sessions/sessions.module';
 
 /**
@@ -34,6 +36,8 @@ function sessionTracker(req: Record<string, unknown>): string {
     KiosksModule,
     SessionsModule,
     JobsModule,
+    PaymentsModule,
+    MaintenanceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

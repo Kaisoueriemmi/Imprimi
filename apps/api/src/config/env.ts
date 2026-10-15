@@ -53,6 +53,13 @@ export const envSchema = z
     LIBREOFFICE_PATH: z.string().min(1).default('soffice'),
     /** Poppler's pdftoppm, renders the page-1 thumbnail of PDFs. */
     PDFTOPPM_PATH: z.string().min(1).default('pdftoppm'),
+
+    /** Prices are rounded up to this (smallest coin accepted by the coin machine). */
+    PRICE_ROUNDING_MILLIMES: z.coerce.number().int().min(1).max(1000).default(100),
+    /** Demo mode: allows the FREE payment method (print without paying). Never in production. */
+    PAYMENT_FREE_MODE: z.stringbool().default(false),
+    /** Periodic tasks (unpaid job expiry, coin machine reservations). Run them in one process. */
+    SCHEDULER_ENABLED: z.stringbool().default(true),
   })
   .superRefine((env, ctx) => {
     if (env.QR_TOKEN_SECRET === env.SESSION_TOKEN_SECRET) {
@@ -63,6 +70,13 @@ export const envSchema = z
       });
     }
     if (env.NODE_ENV !== 'production') return;
+    if (env.PAYMENT_FREE_MODE) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PAYMENT_FREE_MODE'],
+        message: 'free printing must not be enabled in production',
+      });
+    }
     for (const key of [
       'QR_TOKEN_SECRET',
       'SESSION_TOKEN_SECRET',

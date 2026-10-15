@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService, storageKeys } from '../storage/storage.service';
 import { detectFileType } from './upload/file-type';
 import { fileTooLarge, receiveSingleFile } from './upload/receive-upload';
-import { toJobView } from './job-view';
+import { JOB_VIEW_INCLUDE, toJobView } from './job-view';
 
 /**
  * Requests slightly over the limit are read (the excess is discarded by the parser) so the phone
@@ -75,7 +75,7 @@ export class JobsService {
               },
             },
           },
-          include: { files: true },
+          include: JOB_VIEW_INCLUDE,
         });
         await this.prisma.session.updateMany({
           where: { id: session.id, usedAt: null },
@@ -95,7 +95,7 @@ export class JobsService {
   async getView(session: PrintSessionContext, jobId: string): Promise<JobView> {
     const job = await this.prisma.printJob.findFirst({
       where: { id: jobId, sessionId: session.id },
-      include: { files: true },
+      include: JOB_VIEW_INCLUDE,
     });
     if (!job) throw notFound();
     return toJobView(job);
