@@ -1,28 +1,43 @@
+import { createHash } from 'node:crypto';
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { LoggerModule } from 'nestjs-pino';
-import { AppConfigService, validateEnv } from './config/env';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ApiExceptionFilter } from './common/api-exception.filter';
+import { bearerToken } from './common/request-context';
+import { CoreModule } from './core.module';
 import { HealthModule } from './health/health.module';
-import { buildLoggerParams } from './logging/logger.config';
-import { PrismaModule } from './prisma/prisma.module';
+import { JobsModule } from './jobs/jobs.module';
+import { KiosksModule } from './kiosks/kiosks.module';
+import { SessionsModule } from './sessions/sessions.module';
+
+/**
+ * Rate-limit bucket per bearer token (customer session or kiosk key), falling back to the IP.
+ * A forged token only consumes its own bucket, and is rejected by the guards anyway.
+ */
+function sessionTracker(req: Record<string, unknown>): string {
+  const request = req as unknown as Parameters<typeof bearerToken>[0] & { ip?: string };
+  const token = bearerToken(request);
+  if (!token) return `ip:${request.ip ?? 'unknown'}`;
+  return `token:${createHash('sha256').update(token).digest('hex').slice(0, 32)}`;
+}
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      cache: true,
-      validate: validateEnv,
+    CoreModule,
+    ThrottlerModule.forRoot({
+      throttlers: [
+        { name: 'ip', ttl: 60_000, limit: 120 },
+        { name: 'session', ttl: 60_000, limit: 120, getTracker: sessionTracker },
+      ],
     }),
-    LoggerModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: AppConfigService) =>
-        buildLoggerParams({
-          NODE_ENV: config.get('NODE_ENV', { infer: true }),
-          LOG_LEVEL: config.get('LOG_LEVEL', { infer: true }),
-        }),
-    }),
-    PrismaModule,
     HealthModule,
+    KiosksModule,
+    SessionsModule,
+    JobsModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: ApiExceptionFilter },
   ],
 })
 export class AppModule {}

@@ -6,6 +6,7 @@ const validEnv = {
   PUBLIC_WEB_URL: 'http://localhost:3000',
   CORS_ORIGINS: 'http://localhost:3000, http://192.168.1.10:3000',
   QR_TOKEN_SECRET: 'x'.repeat(32),
+  SESSION_TOKEN_SECRET: 'y'.repeat(32),
   S3_ENDPOINT: 'http://localhost:9000',
   S3_BUCKET: 'printbox',
   S3_ACCESS_KEY_ID: 'minio',
@@ -29,6 +30,12 @@ describe('validateEnv', () => {
 
   it('rejects a short QR secret', () => {
     expect(() => validateEnv({ ...validEnv, QR_TOKEN_SECRET: 'short' })).toThrow(/QR_TOKEN_SECRET/);
+  });
+
+  it('requires distinct QR and session secrets', () => {
+    expect(() =>
+      validateEnv({ ...validEnv, SESSION_TOKEN_SECRET: validEnv.QR_TOKEN_SECRET }),
+    ).toThrow(/SESSION_TOKEN_SECRET/);
   });
 
   it('rejects placeholder secrets in production only', () => {
