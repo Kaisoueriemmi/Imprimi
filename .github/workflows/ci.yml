@@ -47,6 +47,8 @@ jobs:
             --to-schema-datamodel prisma/schema.prisma \
             --shadow-database-url postgresql://printbox:printbox@localhost:5432/postgres \
             --exit-code
+      - name: API integration tests (Testcontainers)
+        run: pnpm test:integration
 
   docker:
     name: Docker images build
@@ -54,6 +56,7 @@ jobs:
     needs: check
     env:
       QR_TOKEN_SECRET: ci-only-placeholder-secret-0123456789abcdef
+      SESSION_TOKEN_SECRET: ci-only-placeholder-session-secret-0123456789
     steps:
       - uses: actions/checkout@v5
       - run: docker compose build api web
