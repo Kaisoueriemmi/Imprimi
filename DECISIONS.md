@@ -276,3 +276,81 @@ annulé ou expiré entre-temps, le worker supprime ce qu'il vient de produire.
 ### D35. Limite de 10 documents par session
 
 Confirmée par les tests ; au-delà, l'utilisateur rescanne le QR (nouvelle session).
+
+## Phase 4 — Agent d'impression Windows
+
+### D36. Service Windows : WinSW plutôt que NSSM
+
+La spec proposait `node-windows` ou NSSM. Le site de NSSM (nssm.cc) répondait 503 pendant le
+développement et n'a plus de version depuis 2017 ; `node-windows` exige un `node.exe` installé
+alors que l'agent est un `.exe` autonome. **WinSW 2.12** (l'outil qu'utilise `node-windows` en
+interne) est téléchargé depuis GitHub par `install-agent.ps1` et vérifié par SHA-256 :
+démarrage automatique différé, redémarrage après 5 s / 30 s / 60 s, journaux en rotation
+(8 × 10 Mo), arrêt propre (70 s) qui laisse finir l'impression en cours.
+
+### D37. Service en LocalSystem, dossier verrouillé
+
+Le service tourne sous LocalSystem : l'imprimante doit être installée pour tous les
+utilisateurs. `C:\Program Files\PrintBox` n'est accessible qu'à SYSTEM et aux Administrateurs
+(ACL posées par SID, valables sur un Windows français ou arabe), car la config contient la clé.
+
+### D38. Exécutable : @yao-pkg/pkg, runtime Node 22
+
+tsup produit un seul fichier CommonJS (toutes les dépendances incluses), que pkg transforme en
+`printbox-agent.exe` (~58 Mo). pkg 6 exige Node ≥ 22 pour construire et embarque Node 22 ; le
+code reste compatible Node 20. Le job CI `agent-exe` publie l'exécutable, les scripts, l'exemple
+de config et le README en artefact. Pas de transport pino (threads non chargeables dans l'exe) :
+JSON sur stdout, capté par WinSW.
+
+### D39. SumatraPDF : portable 3.6.1 épinglé
+
+Téléchargé au premier besoin dans `data/sumatra`, **refusé si le SHA-256 ne correspond pas**,
+ou fourni via `sumatraPath`. Impression : `-print-to <imprimante> -print-settings
+"<pages>,<copies>x,duplexlong|simplex,color|monochrome" -silent -exit-on-print`, puis suivi de
+la file Windows (`Get-PrintJob`) jusqu'à la disparition du travail ; bloqué > 3 min (papier,
+erreur) ou > 10 min au total → retiré de la file et signalé en échec (réimpression possible).
+Les PDF locaux s'appellent `printbox-<jobId>.pdf` : la file Windows ne montre jamais le nom de
+fichier du client. Les valeurs passent à PowerShell par variables d'environnement, jamais par
+interpolation (pas d'injection).
+
+### D40. Téléchargement immédiat
+
+L'URL pré-signée ne vaut que 2 min : l'agent télécharge le PDF dès réception du `job:dispatch`
+(vérifie `%PDF-`, 25 Mo max), puis le met dans la file locale imprimée un par un, dans l'ordre.
+
+### D41. Boîte d'envoi persistante et ordre de reconnexion
+
+Tout message agent → serveur (sauf heartbeat) est d'abord écrit dans `data/outbox.json`
+(écriture atomique), puis envoyé avec accusé de réception et retiré seulement après. À chaque
+(re)connexion l'agent vide la boîte puis envoie `agent:ready` ; **seulement alors** le serveur
+renvoie les travaux en attente et la monnaie encore due. Ainsi une pièce rendue hors ligne est
+comptée avant qu'on recalcule ce qui reste à rendre : pas de double rendu.
+
+### D42. Jamais deux impressions d'un même travail
+
+Registre local (`data/ledger.json`) : un travail imprimé renvoyé par le serveur est simplement
+reconfirmé ; un travail **commencé** au moment d'un crash est signalé `INTERRUPTED` (FAILED côté
+serveur, réimpression par un opérateur) plutôt que réimprimé, car on ne sait pas s'il est sorti.
+
+### D43. Monnayeur : interface `CoinDevice`, simulateur, ccTalk à venir
+
+`SimulatedCoinDevice` : pièces injectées par `printbox-agent simulate-coin <millimes>`
+(HTTP sur 127.0.0.1 uniquement), refusées tant que le serveur n'a pas ouvert le monnayeur,
+hopper simulé qui rend avec les plus grosses pièces disponibles et signale un manque.
+`CcTalkCoinDevice` est un emplacement documenté : à implémenter une fois le matériel choisi.
+Chaque commande de rendu porte un `commandId` qui inclut le montant restant dû ; l'agent
+n'exécute un même `commandId` qu'une fois.
+
+### D44. Statut de borne
+
+Heartbeat 15 s → `ONLINE` si l'imprimante est en ligne dans un état normal et le monnayeur
+connecté, sinon `ERROR`. Déconnexion → `OFFLINE` ; sans heartbeat depuis 2 min (connexion morte
+sans déconnexion) → `OFFLINE` par la tâche périodique. Une seule connexion par borne : une
+nouvelle remplace l'ancienne.
+
+### D45. Échec d'impression
+
+`job:failed` → FAILED avec la raison (`PRINTER_ERROR`, `PRINT_TIMEOUT`, `DOWNLOAD_FAILED`,
+`INTERRUPTED`, `INVALID_JOB`) ; les fichiers sont conservés pour une réimpression (Phase 7)
+et supprimés au plus tard par la purge de 2 h (Phase 8). `job:printed` supprime aussitôt les
+fichiers.
