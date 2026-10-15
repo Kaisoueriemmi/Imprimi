@@ -23,7 +23,16 @@ RUN pnpm --filter @printbox/api deploy --prod --legacy /out \
   && cd /out && ./node_modules/.bin/prisma generate
 
 FROM base AS runtime
-ENV NODE_ENV=production
+# DOCX → PDF (LibreOffice Writer, no GUI) and PDF thumbnails (Poppler).
+# Fonts: Liberation + Carlito/Caladea (metric-compatible with Arial/Times/Calibri/Cambria, so
+# Word layouts keep their pagination) and Noto for Arabic.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    libreoffice-writer-nogui poppler-utils \
+    fonts-liberation2 fonts-crosextra-carlito fonts-crosextra-caladea fonts-dejavu-core fonts-noto-core \
+  && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production \
+  HOME=/tmp
 WORKDIR /app
 COPY --from=build --chown=node:node /out ./
 USER node

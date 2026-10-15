@@ -11,6 +11,18 @@ x-s3-env: &s3-env
   S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-printbox}
   S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
   S3_FORCE_PATH_STYLE: 'true'
+  S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+
+# Shared by api and worker (same image, same validated configuration).
+x-api-env: &api-env
+  <<: *s3-env
+  NODE_ENV: ${NODE_ENV:-production}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  DATABASE_URL: postgresql://printbox:${POSTGRES_PASSWORD:-printbox}@postgres:5432/printbox
+  PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:3000}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+  QR_TOKEN_SECRET: ${QR_TOKEN_SECRET:?set QR_TOKEN_SECRET in .env (openssl rand -base64 48)}
+  SESSION_TOKEN_SECRET: ${SESSION_TOKEN_SECRET:?set SESSION_TOKEN_SECRET in .env (openssl rand -base64 48)}
 
 services:
   postgres:
@@ -65,16 +77,28 @@ services:
       minio-init:
         condition: service_completed_successfully
     environment:
-      <<: *s3-env
-      NODE_ENV: ${NODE_ENV:-production}
+      <<: *api-env
       PORT: 3001
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      DATABASE_URL: postgresql://printbox:${POSTGRES_PASSWORD:-printbox}@postgres:5432/printbox
-      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:3000}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
-      QR_TOKEN_SECRET: ${QR_TOKEN_SECRET:?set QR_TOKEN_SECRET in .env (openssl rand -base64 48)}
+      # Conversion runs in the dedicated `worker` service.
+      CONVERSION_WORKER_ENABLED: 'false'
     ports:
       - '3001:3001'
+
+  # Same image, other entry point: converts uploads to PDF (LibreOffice, Poppler, sharp).
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ['node', 'dist/worker.js']
+    healthcheck:
+      disable: true
+    environment:
+      <<: *api-env
+      CONVERSION_CONCURRENCY: ${CONVERSION_CONCURRENCY:-2}
 
   web:
     build:
