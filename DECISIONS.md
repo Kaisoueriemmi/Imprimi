@@ -178,3 +178,32 @@ Deux compteurs (@nestjs/throttler) : par IP (120 req/min par défaut) et par jet
 Le parcours QR → session → upload → conversion est testé contre un vrai PostgreSQL
 (`pnpm test:integration`, Docker requis), avec un stockage en mémoire. Testcontainers v11 :
 la v12 exige Node ≥ 22.22, or le projet cible Node 20.
+
+## Changement de spécification — paiement par pièces à la borne (15/10/2026)
+
+### D27. Paiement principal : monnayeur à la borne, avec rendu de monnaie
+
+Décision du client : le paiement se fait **dans un monnayeur à pièces sur la borne, avant
+l'impression**, et **la machine rend la monnaie**. Le paiement au comptoir (code de retrait +
+« Encaissé ») est **conservé en secours** (monnayeur en panne, client sans pièces).
+
+Conséquences pour la suite :
+
+- **Matériel** (pas encore choisi) : un rendu de monnaie suppose un monnayeur **et** un hopper
+  (distributeur de pièces). Recommandation : monnayeur et hopper **ccTalk** reliés au PC par un
+  adaptateur USB-série. Le hopper confirme chaque pièce rendue, ce qu'un monnayeur à
+  impulsions + Arduino ne sait pas faire de façon fiable. À valider avant l'achat.
+- **Agent (Phase 4)** : interface `CoinDevice` (activer/désactiver l'acceptation, événement
+  pièce acceptée, rendre N millimes, lire l'état du hopper), avec `SimulatedCoinDevice` pour le
+  dev et les tests, et un pilote réel quand le matériel sera choisi.
+- **Parcours** : le client valide sur son téléphone ; la borne se verrouille sur son travail et
+  affiche le montant à insérer ; le cumul inséré s'affiche en direct (écran + téléphone) ;
+  montant atteint → monnaie rendue → impression. Sans paiement complet en 3 min, la borne se
+  libère et les pièces déjà insérées sont rendues.
+- **Fiabilité** : chaque pièce est remontée par l'agent avec un identifiant unique (idempotence,
+  jamais comptée deux fois) et journalisée (`Payment` provider `COIN`, détail des pièces) ;
+  si le hopper ne peut pas rendre toute la monnaie, le reste dû est enregistré et signalé à
+  l'opérateur pour remboursement au comptoir.
+- **Prix** : arrondis au multiple de la plus petite pièce acceptée par le monnayeur, pour que
+  le montant soit payable exactement.
+- Le schéma gagnera la valeur `COIN` dans `PaymentProvider` (migration en Phase 3).
