@@ -23,6 +23,7 @@ x-api-env: &api-env
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
   QR_TOKEN_SECRET: ${QR_TOKEN_SECRET:?set QR_TOKEN_SECRET in .env (openssl rand -base64 48)}
   SESSION_TOKEN_SECRET: ${SESSION_TOKEN_SECRET:?set SESSION_TOKEN_SECRET in .env (openssl rand -base64 48)}
+  PRICE_ROUNDING_MILLIMES: ${PRICE_ROUNDING_MILLIMES:-100}
 
 services:
   postgres:
@@ -99,6 +100,8 @@ services:
     environment:
       <<: *api-env
       CONVERSION_CONCURRENCY: ${CONVERSION_CONCURRENCY:-2}
+      # Expiry and coin reservations run in the api service only.
+      SCHEDULER_ENABLED: 'false'
 
   web:
     build:

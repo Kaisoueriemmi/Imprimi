@@ -207,3 +207,72 @@ Conséquences pour la suite :
 - **Prix** : arrondis au multiple de la plus petite pièce acceptée par le monnayeur, pour que
   le montant soit payable exactement.
 - Le schéma gagnera la valeur `COIN` dans `PaymentProvider` (migration en Phase 3).
+
+## Phase 3 — Options, prix, code de retrait et paiement
+
+### D28. Calcul du prix
+
+`pages sélectionnées × copies × prix par page`, moins la remise recto-verso (seulement à partir
+de 2 pages : une page seule n'a pas de verso), puis **arrondi au supérieur** au multiple de
+`PRICE_ROUNDING_MILLIMES` (100 par défaut = 0,100 DT), pour que le montant se paie en pièces.
+Uniquement des entiers (une seule division entière, pas de flottants). Fonction pure dans
+`@printbox/shared`, mais seul le prix renvoyé par l'API fait foi. La règle propre à la borne
+l'emporte sur la règle globale de même mode couleur.
+
+### D29. Plage de pages
+
+`"1-3, 5"` : espaces tolérés, chevauchements fusionnés, 50 segments max ; erreurs distinguées
+(syntaxe, début > fin, hors document). Stockée normalisée (`"1-3,5"`, format SumatraPDF) ou
+`null` quand toutes les pages sont choisies. `totalPages` = pages sélectionnées × copies,
+c'est-à-dire le nombre de pages qui sortiront de l'imprimante (utile aux statistiques).
+
+### D30. Validation (checkout)
+
+`UPLOADED → AWAITING_PAYMENT` : options figées, prix recalculé avec les tarifs du moment puis
+figé, code de retrait à 6 chiffres tiré avec `crypto.randomInt` (zéros en tête conservés),
+unique parmi les travaux actifs grâce à l'index unique `activePickupCode` ; en cas de collision,
+nouveau tirage (10 essais). Le mode `FREE` (démo) paie aussitôt et est refusé en production.
+
+### D31. Machine à états appliquée en base
+
+Tout changement de statut passe par `JobStateService.transition` : vérifie la transition avec
+la machine partagée, fait un compare-and-set sur le statut courant (`UPDATE … WHERE status IN
+(…)`), efface `activePickupCode` en sortie des statuts actifs, et écrit l'`AuditLog`
+(acteur `session:`, `agent:`, `admin:` ou `system`).
+
+### D32. Monnayeur : réservation, pièces idempotentes, monnaie
+
+- Une seule personne à la fois par borne : `Kiosk.paymentJobId` (unique) + `paymentExpiresAt`,
+  3 min prolongées à chaque pièce. Une autre demande reçoit 409 `KIOSK_BUSY`.
+- Chaque pièce est remontée par l'agent avec **son propre identifiant** (`CoinEvent.id`) : une
+  pièce renvoyée après une reconnexion n'est jamais comptée deux fois.
+- Toutes les opérations sur le monnayeur d'une borne sont sérialisées par un verrou de ligne
+  PostgreSQL (`SELECT … FOR UPDATE` sur la borne) : deux pièces simultanées ne peuvent pas
+  « payer » deux fois ni se perdre.
+- Montant atteint → paiement CONFIRMED, travail PAID, `changeDueMillimes` = surplus, réservation
+  libérée. Abandon, expiration de la réservation ou paiement au comptoir pendant une réservation
+  → paiement CANCELLED et toutes les pièces reçues deviennent un remboursement.
+  Une pièce insérée sans paiement en cours est rendue.
+- L'agent déclare chaque pièce rendue (`DISPENSED`) ; `changeDispensedMillimes` < `changeDueMillimes`
+  signale un hopper vide → alerte opérateur (Phase 7), remboursement au comptoir.
+- Rendre la monnaie et activer/désactiver le monnayeur sont des commandes envoyées à l'agent
+  (Phase 4), déclenchées par les événements `coin.change-due` et `coin.session-updated`.
+
+### D33. Événements de domaine en mémoire, tâches périodiques dans l'API
+
+`@nestjs/event-emitter` découple paiements et passerelles Socket.IO (Phase 4). Ces événements
+ne traversent pas les processus : la logique de paiement et les tâches périodiques
+(expiration des travaux non payés à 30 min, réservations échues) tournent donc dans le
+processus **api** (`SCHEDULER_ENABLED=true`), pas dans le worker de conversion. Une seule
+instance d'API est prévue ; les tâches restent sûres si deux instances les lançaient
+(compare-and-set). Expiration = suppression immédiate des fichiers.
+
+### D34. Annulation par le client
+
+`DELETE /api/jobs/:id` (avant paiement) : réservation du monnayeur libérée (pièces rendues),
+travail CANCELLED, fichiers supprimés aussitôt. Si une conversion se termine sur un travail
+annulé ou expiré entre-temps, le worker supprime ce qu'il vient de produire.
+
+### D35. Limite de 10 documents par session
+
+Confirmée par les tests ; au-delà, l'utilisateur rescanne le QR (nouvelle session).
