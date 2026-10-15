@@ -9,6 +9,7 @@ describe('Prisma enums match @printbox/shared', () => {
     ['PaperLevel', $Enums.PaperLevel, shared.PaperLevel],
     ['ColorMode', $Enums.ColorMode, shared.ColorMode],
     ['JobStatus', $Enums.JobStatus, shared.JobStatus],
+    ['ConversionStatus', $Enums.ConversionStatus, shared.ConversionStatus],
     ['PaymentProvider', $Enums.PaymentProvider, shared.PaymentProvider],
     ['PaymentStatus', $Enums.PaymentStatus, shared.PaymentStatus],
     ['AdminRole', $Enums.AdminRole, shared.AdminRole],

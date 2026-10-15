@@ -41,6 +41,13 @@ enum JobStatus {
   EXPIRED
 }
 
+enum ConversionStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
 enum PaymentProvider {
   COUNTER
   KONNECT
@@ -147,7 +154,7 @@ model PrintJob {
 }
 
 model JobFile {
-  id                  String    @id @default(cuid())
+  id                  String           @id @default(cuid())
   jobId               String
   originalName        String
   mimeType            String
@@ -156,12 +163,16 @@ model JobFile {
   pdfStorageKey       String?
   thumbnailStorageKey String?
   pageCount           Int?
-  createdAt           DateTime  @default(now())
+  conversionStatus    ConversionStatus @default(PENDING)
+  conversionStartedAt DateTime?
+  conversionAttempts  Int              @default(0)
+  createdAt           DateTime         @default(now())
   deletedAt           DateTime?
 
   job PrintJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([jobId])
+  @@index([conversionStatus, createdAt])
   @@index([deletedAt, createdAt])
 }
 
