@@ -11,6 +11,7 @@ describe('Prisma enums match @printbox/shared', () => {
     ['JobStatus', $Enums.JobStatus, shared.JobStatus],
     ['ConversionStatus', $Enums.ConversionStatus, shared.ConversionStatus],
     ['PaymentProvider', $Enums.PaymentProvider, shared.PaymentProvider],
+    ['CoinEventKind', $Enums.CoinEventKind, shared.CoinEventKind],
     ['PaymentStatus', $Enums.PaymentStatus, shared.PaymentStatus],
     ['AdminRole', $Enums.AdminRole, shared.AdminRole],
   ])('%s', (_name, prismaEnum, sharedEnum) => {
