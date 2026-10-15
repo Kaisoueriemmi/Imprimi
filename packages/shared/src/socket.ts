@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { colorModeSchema, idSchema, kioskStatusSchema, paperLevelSchema } from './schemas';
 
+/** Last 3 digits of a pickup code, shown on the shared kiosk screen. */
+export function pickupCodeHint(pickupCode: string | null): string {
+  return pickupCode ? `•••${pickupCode.slice(-3)}` : '•••';
+}
+
 /** Socket.IO namespaces. */
 export const SocketNamespace = {
   /** Print agents running on the kiosk PCs (outbound connection from the agent). */
@@ -160,11 +165,52 @@ export const coinShortfallSchema = z.object({
 });
 export type CoinShortfall = z.infer<typeof coinShortfallSchema>;
 
-/** Server → kiosk screen. */
-export const kioskStateSchema = z.object({
+// --- Kiosk screen ------------------------------------------------------------------------------
+
+/** Socket.IO handshake `auth` of the kiosk screen (display key, not the agent key). */
+export const kioskScreenAuthSchema = z.object({
   kioskId: idSchema,
-  status: kioskStatusSchema,
-  printerOnline: z.boolean(),
-  queueLength: z.number().int().nonnegative(),
+  displayKey: z.string().min(10).max(200),
 });
-export type KioskState = z.infer<typeof kioskStateSchema>;
+export type KioskScreenAuth = z.infer<typeof kioskScreenAuthSchema>;
+
+export const OutOfServiceReason = {
+  /** The print agent is not connected (PC off, network down, service stopped). */
+  AGENT_OFFLINE: 'AGENT_OFFLINE',
+  /** Printer or coin machine in error (paper out, jam, offline…). */
+  DEVICE_ERROR: 'DEVICE_ERROR',
+} as const;
+export type OutOfServiceReason = (typeof OutOfServiceReason)[keyof typeof OutOfServiceReason];
+
+/**
+ * Server → kiosk screen (`kiosk:state`, also `GET /api/kiosks/:id/screen`). Pushed again on
+ * every change: job status, coin payment, agent connection, printer state.
+ */
+export const kioskScreenStateSchema = z.object({
+  kioskId: idSchema,
+  name: z.string(),
+  status: kioskStatusSchema,
+  /** Null when the kiosk can print; otherwise the screen shows "Hors service". */
+  outOfService: z.enum(OutOfServiceReason).nullable(),
+  paperLevel: paperLevelSchema,
+  /** Paid jobs waiting or printing, oldest first. */
+  queue: z.array(
+    z.object({
+      /** Last 3 digits of the pickup code, so customers recognise their job (`•••731`). */
+      codeHint: z.string(),
+      status: z.enum(['PAID', 'QUEUED', 'PRINTING']),
+      pages: z.number().int().nonnegative(),
+    }),
+  ),
+  /** Customer currently paying at the coin machine. */
+  coinPayment: z
+    .object({
+      codeHint: z.string(),
+      amountDueMillimes: z.number().int().nonnegative(),
+      receivedMillimes: z.number().int().nonnegative(),
+      expiresAt: z.iso.datetime(),
+    })
+    .nullable(),
+  updatedAt: z.iso.datetime(),
+});
+export type KioskScreenState = z.infer<typeof kioskScreenStateSchema>;
