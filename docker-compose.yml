@@ -1,0 +1,93 @@
+# Local stack: PostgreSQL, MinIO (S3), API, web.
+#   docker compose up -d --build        # everything
+#   pnpm db:up                          # only postgres + minio, to run api/web with `pnpm dev`
+# Values come from .env (copy .env.example); the defaults below are for local development only.
+name: printbox
+
+x-s3-env: &s3-env
+  S3_ENDPOINT: http://minio:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: ${S3_BUCKET:-printbox}
+  S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-printbox}
+  S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
+  S3_FORCE_PATH_STYLE: 'true'
+
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: printbox
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-printbox}
+      POSTGRES_DB: printbox
+    ports:
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U printbox -d printbox']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Upstream MinIO no longer publishes images; Chainguard rebuilds it from source (see DECISIONS.md).
+  minio:
+    image: cgr.dev/chainguard/minio@sha256:2136d593beacf4461187035eca949fe49abd589d5079735025c711ca58fee0c8
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-printbox}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio-secret}
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    volumes:
+      - miniodata:/data
+
+  # Creates the private bucket once MinIO answers (retries until then).
+  minio-init:
+    image: cgr.dev/chainguard/minio-client@sha256:d8a93c5d335509ff353774eefec8f82fa2a2a975e800139702232d8be3dbe6b9
+    depends_on:
+      - minio
+    restart: on-failure
+    environment:
+      MC_HOST_local: http://${MINIO_ROOT_USER:-printbox}:${MINIO_ROOT_PASSWORD:-change-me-minio-secret}@minio:9000
+    command: ['mb', '--ignore-existing', 'local/${S3_BUCKET:-printbox}']
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *s3-env
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgresql://printbox:${POSTGRES_PASSWORD:-printbox}@postgres:5432/printbox
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      QR_TOKEN_SECRET: ${QR_TOKEN_SECRET:?set QR_TOKEN_SECRET in .env (openssl rand -base64 48)}
+    ports:
+      - '3001:3001'
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '3000:3000'
+
+volumes:
+  pgdata:
+  miniodata:
