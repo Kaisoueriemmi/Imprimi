@@ -16,6 +16,13 @@ const GENERIC_MESSAGES: Record<ApiErrorCode, string> = {
   FILE_MISSING: 'Aucun fichier reçu',
   FILE_TOO_LARGE: 'Fichier trop volumineux',
   UNSUPPORTED_FILE_TYPE: 'Format non pris en charge',
+  JOB_NOT_READY: 'Le document est encore en préparation',
+  INVALID_JOB_STATE: "Action impossible dans l'état actuel du document",
+  INVALID_PAGE_RANGE: 'Pages invalides',
+  OPTION_UNAVAILABLE: 'Option indisponible sur cette borne',
+  PRICING_UNAVAILABLE: 'Tarif non configuré',
+  PAYMENT_METHOD_UNAVAILABLE: 'Moyen de paiement indisponible',
+  KIOSK_BUSY: 'La borne est occupée, réessayez dans un instant',
 };
 
 function codeForStatus(status: number): ApiErrorCode {
