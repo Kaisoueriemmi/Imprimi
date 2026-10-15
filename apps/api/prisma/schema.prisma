@@ -1,0 +1,211 @@
+// PrintBox data model.
+// Every amount is an integer number of millimes (1 DT = 1000 millimes).
+// Enum values must stay identical to packages/shared/src/enums.ts (enforced by src/prisma/enums.spec.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum KioskStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+}
+
+enum PaperLevel {
+  UNKNOWN
+  OK
+  LOW
+  EMPTY
+}
+
+enum ColorMode {
+  BW
+  COLOR
+}
+
+enum JobStatus {
+  UPLOADED
+  AWAITING_PAYMENT
+  PAID
+  QUEUED
+  PRINTING
+  PRINTED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentProvider {
+  COUNTER
+  KONNECT
+  FLOUCI
+  FREE
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum AdminRole {
+  OWNER
+  OPERATOR
+}
+
+model Kiosk {
+  id              String      @id @default(cuid())
+  name            String
+  location        String?
+  /// SHA-256 of the print agent's API key (high-entropy random key, so a fast hash is enough).
+  apiKeyHash      String      @unique
+  /// SHA-256 of the kiosk screen's key. Separate from the agent key (Phase 5).
+  displayKeyHash  String      @unique
+  status          KioskStatus @default(OFFLINE)
+  lastHeartbeatAt DateTime?
+  printerName     String?
+  supportsColor   Boolean     @default(false)
+  supportsDuplex  Boolean     @default(false)
+  paperLevelHint  PaperLevel  @default(UNKNOWN)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  pricingRules PricingRule[]
+  sessions     Session[]
+  jobs         PrintJob[]
+}
+
+/// kioskId = null → global rule. A kiosk-specific rule overrides the global one for the same colorMode.
+model PricingRule {
+  id                    String    @id @default(cuid())
+  kioskId               String?
+  colorMode             ColorMode
+  pricePerPageMillimes  Int
+  duplexDiscountPercent Int       @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  kiosk Kiosk? @relation(fields: [kioskId], references: [id], onDelete: Cascade)
+
+  @@unique([kioskId, colorMode])
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  kioskId   String
+  /// Identifier (jti) of the signed QR token the session was opened with.
+  qrToken   String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  kiosk Kiosk      @relation(fields: [kioskId], references: [id], onDelete: Cascade)
+  jobs  PrintJob[]
+
+  @@index([kioskId])
+  @@index([qrToken])
+}
+
+model PrintJob {
+  id               String    @id @default(cuid())
+  kioskId          String
+  sessionId        String
+  /// 6-digit code kept for history once the job is finished.
+  pickupCode       String?
+  /// Same code while the job is active, null otherwise: the unique index makes the
+  /// code unique among active jobs only.
+  activePickupCode String?   @unique
+  status           JobStatus @default(UPLOADED)
+  copies           Int       @default(1)
+  colorMode        ColorMode @default(BW)
+  duplex           Boolean   @default(false)
+  pageRange        String?
+  totalPages       Int?
+  priceMillimes    Int?
+  errorMessage     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  paidAt           DateTime?
+  printedAt        DateTime?
+
+  kiosk    Kiosk     @relation(fields: [kioskId], references: [id], onDelete: Restrict)
+  session  Session   @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  files    JobFile[]
+  payments Payment[]
+
+  @@index([kioskId, status])
+  @@index([status, createdAt])
+  @@index([pickupCode])
+}
+
+model JobFile {
+  id                  String    @id @default(cuid())
+  jobId               String
+  originalName        String
+  mimeType            String
+  sizeBytes           Int
+  storageKey          String
+  pdfStorageKey       String?
+  thumbnailStorageKey String?
+  pageCount           Int?
+  createdAt           DateTime  @default(now())
+  deletedAt           DateTime?
+
+  job PrintJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([deletedAt, createdAt])
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  jobId          String
+  provider       PaymentProvider
+  amountMillimes Int
+  status         PaymentStatus   @default(PENDING)
+  reference      String?
+  confirmedById  String?
+  createdAt      DateTime        @default(now())
+  confirmedAt    DateTime?
+
+  job         PrintJob   @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  confirmedBy AdminUser? @relation(fields: [confirmedById], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([status, confirmedAt])
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  /// argon2id hash.
+  passwordHash String
+  role         AdminRole @default(OPERATOR)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  confirmedPayments Payment[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  /// e.g. "admin:<id>", "agent:<kioskId>", "system".
+  actor     String
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
