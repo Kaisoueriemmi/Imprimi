@@ -5,10 +5,12 @@ import { ApiErrorCode, CoinSessionView, TIMINGS } from '@printbox/shared';
 import { ApiException, notFound } from '../common/api-exception';
 import { PrintSessionContext } from '../common/request-context';
 import {
+  changeCommandId,
   CoinChangeDueEvent,
   CoinSessionUpdatedEvent,
   DomainEvent,
   JobStatusChangedEvent,
+  orphanCoinCommandId,
 } from '../events/domain-events';
 import { invalidJobState, PrismaTx } from '../jobs/job-state.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -223,6 +225,7 @@ export class CoinPaymentService {
           paymentId: null,
           amountMillimes: coin.valueMillimes,
           reason: 'REFUND',
+          commandId: orphanCoinCommandId(coin.eventId),
         });
         return outcome;
       case 'partial':
@@ -261,6 +264,7 @@ export class CoinPaymentService {
             paymentId: payment.id,
             amountMillimes: payment.changeDueMillimes,
             reason: 'CHANGE',
+            commandId: changeCommandId('CHANGE', payment.id, payment.changeDueMillimes),
           });
         }
         return { kind: 'paid', jobId: payment.jobId, changeDueMillimes: payment.changeDueMillimes };
@@ -367,6 +371,7 @@ export class CoinPaymentService {
         paymentId: payment.id,
         amountMillimes: payment.receivedMillimes,
         reason: 'REFUND',
+        commandId: changeCommandId('REFUND', payment.id, payment.receivedMillimes),
       });
     }
   }

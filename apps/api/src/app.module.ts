@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AgentsModule } from './agents/agents.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { bearerToken } from './common/request-context';
 import { CoreModule } from './core.module';
@@ -38,6 +39,7 @@ function sessionTracker(req: Record<string, unknown>): string {
     JobsModule,
     PaymentsModule,
     MaintenanceModule,
+    AgentsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

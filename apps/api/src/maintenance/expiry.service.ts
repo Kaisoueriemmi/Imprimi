@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JobStatus } from '@prisma/client';
 import { TIMINGS } from '@printbox/shared';
+import { AgentStatusService } from '../agents/agent-status.service';
 import { ApiException } from '../common/api-exception';
 import { AppConfigService } from '../config/env';
 import { DomainEvent, JobStatusChangedEvent } from '../events/domain-events';
@@ -21,8 +22,8 @@ const RUN_INTERVAL_MS = 60_000;
 const BATCH_SIZE = 100;
 
 /**
- * Every minute: ends lapsed coin machine reservations (coins refunded), then expires jobs left
- * unpaid for 30 minutes and deletes their files. Every step is idempotent (compare-and-set),
+ * Every minute: ends lapsed coin machine reservations (coins refunded), expires jobs left
+ * unpaid for 30 minutes (files deleted), and marks silent kiosks OFFLINE. Every step is idempotent (compare-and-set),
  * so a second instance running it at the same time does no harm.
  */
 @Injectable()
@@ -38,6 +39,7 @@ export class ExpiryService implements OnApplicationBootstrap, OnModuleDestroy {
     private readonly jobState: JobStateService,
     private readonly jobFiles: JobFilesService,
     private readonly events: EventEmitter2,
+    private readonly agentStatus: AgentStatusService,
     @Inject(ConfigService) env: AppConfigService,
   ) {
     this.enabled = env.get('SCHEDULER_ENABLED', { infer: true });
@@ -58,6 +60,7 @@ export class ExpiryService implements OnApplicationBootstrap, OnModuleDestroy {
     try {
       await this.coins.expireLapsed(now);
       await this.expireUnpaidJobs(now);
+      await this.agentStatus.markStale(now);
     } catch (error) {
       this.logger.error({ err: error }, 'Expiry run failed');
     } finally {

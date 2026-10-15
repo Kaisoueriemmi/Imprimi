@@ -30,8 +30,27 @@ export interface CoinSessionUpdatedEvent {
 
 export interface CoinChangeDueEvent {
   kioskId: string;
+  /** Idempotence key for the agent; changes with the amount still owed. See changeCommandId. */
+  commandId: string;
   /** Null for a coin inserted while nobody was paying. */
   paymentId: string | null;
   amountMillimes: number;
   reason: 'CHANGE' | 'REFUND';
+}
+
+/**
+ * Command id of a pay-back: one per payment and remaining amount. After a partial pay-back the
+ * remaining amount differs, so a resent command for the rest is not mistaken for a duplicate.
+ */
+export function changeCommandId(
+  reason: CoinChangeDueEvent['reason'],
+  paymentId: string,
+  remainingMillimes: number,
+): string {
+  return `${reason.toLowerCase()}:${paymentId}:${remainingMillimes}`;
+}
+
+/** Command id of the refund of a coin inserted while nobody was paying. */
+export function orphanCoinCommandId(coinEventId: string): string {
+  return `orphan:${coinEventId}`;
 }
