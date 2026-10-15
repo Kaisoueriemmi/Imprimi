@@ -354,3 +354,43 @@ nouvelle remplace l'ancienne.
 `INTERRUPTED`, `INVALID_JOB`) ; les fichiers sont conservés pour une réimpression (Phase 7)
 et supprimés au plus tard par la purge de 2 h (Phase 8). `job:printed` supprime aussitôt les
 fichiers.
+
+## Phase 5 — Écran de la borne
+
+### D46. Clé d'écran dans le fragment d'URL
+
+La page `/kiosk/<id>` s'authentifie avec la clé d'écran `pbd_…` (distincte de la clé d'agent).
+Elle est fournie une fois dans le fragment (`#key=…`) : un fragment n'est jamais envoyé au
+serveur ni journalisé. La page la mémorise (localStorage du profil Chrome dédié) et retire le
+fragment de l'URL. Le serveur refuse toute clé qui n'est pas la clé d'écran de cette borne.
+
+### D47. État poussé par Socket.IO, namespace `/kiosks`
+
+L'API pousse un état complet (`kiosk:state`, contrat `kioskScreenStateSchema`) à la connexion
+et après chaque événement : statut d'un travail, paiement en pièces, connexion/déconnexion de
+l'agent, état de l'imprimante. Les événements rapprochés sont regroupés (150 ms). Une route
+REST `GET /api/kiosks/:id/screen` donne le même état. Le QR est rafraîchi par un appel HTTP
+toutes les 60 s (jeton valable 90 s, l'ancien est gardé tant qu'il est valide en cas d'erreur).
+
+### D48. Écran partagé : jamais de code complet
+
+L'écran public n'affiche que les 3 derniers chiffres du code de retrait (`•••731`) et aucun nom
+de fichier. Le code complet ne s'affiche que sur le téléphone du client.
+
+### D49. « Hors service »
+
+Affiché (QR masqué, aucun upload possible) si l'agent n'est pas connecté, si la borne est en
+erreur (imprimante hors ligne / plus de papier / bourrage, monnayeur déconnecté), ou si l'API
+est injoignable depuis plus de 30 s (une coupure brève ne fait pas clignoter l'écran).
+
+### D50. Chrome en mode kiosque, robustesse
+
+`install-kiosk-screen.ps1` crée un raccourci de démarrage : `--kiosk`, profil dédié, sans
+dialogues de crash ni zoom au pincement. La page garde l'écran allumé (Screen Wake Lock),
+masque le curseur, et se recharge chaque nuit à 4 h (mémoire, nouvelles versions).
+Socket.IO applique le même CORS strict que l'API (adaptateur `ConfiguredIoAdapter`).
+
+### D51. shadcn/ui reporté à la Phase 6
+
+L'écran de borne est une mise en page sur mesure sans composants de formulaire ; shadcn/ui sera
+initialisé avec la web app client (formulaires, boutons, dialogues).
