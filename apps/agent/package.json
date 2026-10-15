@@ -1,0 +1,28 @@
+{
+  "name": "@printbox/agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PrintBox print agent: runs as a Windows service next to the kiosk printer.",
+  "bin": {
+    "printbox-agent": "dist/index.cjs"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.cjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@printbox/shared": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
