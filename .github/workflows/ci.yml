@@ -60,3 +60,29 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: docker compose build api web
+
+  agent-exe:
+    name: Windows agent executable
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      # @yao-pkg/pkg needs Node >= 22 to build (the agent code itself targets Node 20+).
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @printbox/shared build
+      - run: pnpm --filter @printbox/agent package
+      - name: Assemble the release folder
+        run: |
+          mkdir -p release
+          cp apps/agent/bin/printbox-agent.exe apps/agent/scripts/*.ps1 \
+             apps/agent/agent.config.example.json apps/agent/README.md release/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: printbox-agent-windows
+          path: release/
+          retention-days: 30

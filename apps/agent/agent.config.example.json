@@ -1,6 +1,13 @@
 {
-  "apiUrl": "http://localhost:3001",
+  "apiUrl": "https://api.printbox.example.tn",
   "kioskId": "demo-kiosk",
-  "apiKey": "pbk_paste-the-key-printed-by-the-seed",
-  "printerName": "HP LaserJet Pro M404"
+  "apiKey": "pbk_paste-the-key-printed-when-the-kiosk-was-created",
+  "printerName": "HP LaserJet Pro M404",
+  "printer": "windows",
+  "dataDir": "data",
+  "coinDevice": {
+    "driver": "simulated",
+    "simulatorPort": 7575
+  },
+  "logLevel": "info"
 }
