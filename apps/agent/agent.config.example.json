@@ -1,0 +1,6 @@
+{
+  "apiUrl": "http://localhost:3001",
+  "kioskId": "demo-kiosk",
+  "apiKey": "pbk_paste-the-key-printed-by-the-seed",
+  "printerName": "HP LaserJet Pro M404"
+}
