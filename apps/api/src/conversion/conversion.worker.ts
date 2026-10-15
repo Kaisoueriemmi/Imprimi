@@ -17,6 +17,8 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AppConfigService } from '../config/env';
+import { JobFilesService } from '../jobs/job-files.service';
+import { PricingService } from '../pricing/pricing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { prefixOf, StorageService, storageKeys } from '../storage/storage.service';
 import { ConversionError } from './conversion-error';
@@ -71,6 +73,8 @@ export class ConversionWorker implements OnApplicationBootstrap, OnModuleDestroy
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly pricing: PricingService,
+    private readonly jobFiles: JobFilesService,
     @Inject(ConfigService) env: AppConfigService,
   ) {
     this.enabled = env.get('CONVERSION_WORKER_ENABLED', { infer: true });
@@ -151,21 +155,16 @@ export class ConversionWorker implements OnApplicationBootstrap, OnModuleDestroy
     const workDir = await mkdtemp(join(tmpdir(), 'printbox-conv-'));
     try {
       const result = await this.convert(file, workDir);
-      await this.prisma.$transaction(async (tx) => {
-        await tx.jobFile.update({
-          where: { id: file.id },
-          data: {
-            conversionStatus: ConversionStatus.READY,
-            pdfStorageKey: result.pdfStorageKey,
-            thumbnailStorageKey: result.thumbnailStorageKey,
-            pageCount: result.pageCount,
-          },
-        });
-        await tx.printJob.updateMany({
-          where: { id: file.jobId, status: JobStatus.UPLOADED },
-          data: { totalPages: result.pageCount },
-        });
+      await this.prisma.jobFile.update({
+        where: { id: file.id },
+        data: {
+          conversionStatus: ConversionStatus.READY,
+          pdfStorageKey: result.pdfStorageKey,
+          thumbnailStorageKey: result.thumbnailStorageKey,
+          pageCount: result.pageCount,
+        },
       });
+      await this.applyDefaultQuote(file.jobId, result.pageCount);
       this.logger.log(
         { jobId: file.jobId, pages: result.pageCount, durationMs: Date.now() - startedAt },
         'File converted',
@@ -174,6 +173,50 @@ export class ConversionWorker implements OnApplicationBootstrap, OnModuleDestroy
       await this.fail(file, error);
     } finally {
       await rm(workDir, { recursive: true, force: true });
+    }
+  }
+
+  /**
+   * Prices the job with its current options (every page, 1 copy, B&W by default) so the phone
+   * shows a price as soon as the preview appears. If the customer cancelled — or the job expired —
+   * during the conversion, the files just produced are deleted instead.
+   */
+  private async applyDefaultQuote(jobId: string, pageCount: number): Promise<void> {
+    const job = await this.prisma.printJob.findUniqueOrThrow({
+      where: { id: jobId },
+      select: { status: true, kioskId: true, copies: true, colorMode: true, duplex: true },
+    });
+    if (job.status !== JobStatus.UPLOADED) {
+      await this.jobFiles.deleteJobFiles(jobId);
+      return;
+    }
+    // Options cannot change before conversion ends, so this is every page × the default copies.
+    await this.prisma.printJob.updateMany({
+      where: { id: jobId, status: JobStatus.UPLOADED },
+      data: { totalPages: pageCount * job.copies },
+    });
+    try {
+      const quote = await this.pricing.quote({
+        kioskId: job.kioskId,
+        pageCount,
+        options: {
+          copies: job.copies,
+          colorMode: job.colorMode,
+          duplex: job.duplex,
+          pageRange: null,
+        },
+      });
+      await this.prisma.printJob.updateMany({
+        where: { id: jobId, status: JobStatus.UPLOADED },
+        data: {
+          pageRange: null,
+          totalPages: quote.totalPages,
+          priceMillimes: quote.priceMillimes,
+        },
+      });
+    } catch (error) {
+      // No tariff configured: the price appears when options are sent, or the error does.
+      this.logger.warn({ jobId, err: error }, 'Could not price the converted job');
     }
   }
 
