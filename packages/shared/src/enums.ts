@@ -37,6 +37,15 @@ export const JobStatus = {
 } as const;
 export type JobStatus = (typeof JobStatus)[keyof typeof JobStatus];
 
+/** Normalisation of an uploaded file into a printable PDF. */
+export const ConversionStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  READY: 'READY',
+  FAILED: 'FAILED',
+} as const;
+export type ConversionStatus = (typeof ConversionStatus)[keyof typeof ConversionStatus];
+
 export const PaymentProvider = {
   COUNTER: 'COUNTER',
   KONNECT: 'KONNECT',

@@ -14,6 +14,8 @@ export const UPLOAD_LIMITS = {
     'image/png',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   ],
+  /** Several documents per visit, but bounded. */
+  maxJobsPerSession: 10,
 } as const;
 export type AllowedMimeType = (typeof UPLOAD_LIMITS.allowedMimeTypes)[number];
 
@@ -25,6 +27,12 @@ export const PRINT_LIMITS = {
 
 export const DEFAULT_COLOR_MODE = ColorMode.BW;
 
+/**
+ * One QR token may open a few sessions (several customers scanning the same code within its
+ * 90 s lifetime), never an unbounded number.
+ */
+export const MAX_SESSIONS_PER_QR_TOKEN = 5;
+
 /** Pickup code shown to the customer and typed at the counter. */
 export const PICKUP_CODE_LENGTH = 6;
 
@@ -34,6 +42,8 @@ export const TIMINGS = {
   qrTokenTtlMs: 90 * SECOND,
   /** The kiosk screen asks for a new QR token this often (< TTL so a displayed QR is always valid). */
   qrRefreshIntervalMs: 60 * SECOND,
+  /** Lifetime of the customer session opened by scanning the QR code. */
+  sessionTtlMs: 30 * MINUTE,
   agentHeartbeatIntervalMs: 15 * SECOND,
   /** A kiosk with no heartbeat for this long is considered OFFLINE and triggers an alert. */
   kioskOfflineAfterMs: 2 * MINUTE,
