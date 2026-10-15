@@ -1,1 +1,6 @@
 @import 'tailwindcss';
+
+@theme {
+  /* Arabic texts (kiosk screen, RTL pages): Noto Sans Arabic, loaded by next/font. */
+  --font-arabic: var(--font-noto-arabic), 'Segoe UI', Tahoma, sans-serif;
+}
