@@ -44,6 +44,8 @@ export const TIMINGS = {
   qrRefreshIntervalMs: 60 * SECOND,
   /** Lifetime of the customer session opened by scanning the QR code. */
   sessionTtlMs: 30 * MINUTE,
+  /** The coin machine stays reserved for one job this long, extended by each coin inserted. */
+  coinPaymentWindowMs: 3 * MINUTE,
   agentHeartbeatIntervalMs: 15 * SECOND,
   /** A kiosk with no heartbeat for this long is considered OFFLINE and triggers an alert. */
   kioskOfflineAfterMs: 2 * MINUTE,

@@ -47,12 +47,24 @@ export const ConversionStatus = {
 export type ConversionStatus = (typeof ConversionStatus)[keyof typeof ConversionStatus];
 
 export const PaymentProvider = {
+  /** Coin machine at the kiosk (gives change). Main method. */
+  COIN: 'COIN',
+  /** Paid at the counter, confirmed by an operator. Fallback. */
   COUNTER: 'COUNTER',
   KONNECT: 'KONNECT',
   FLOUCI: 'FLOUCI',
   FREE: 'FREE',
 } as const;
 export type PaymentProvider = (typeof PaymentProvider)[keyof typeof PaymentProvider];
+
+/** What the kiosk agent reports about coins. */
+export const CoinEventKind = {
+  /** A coin was accepted by the coin validator. */
+  INSERTED: 'INSERTED',
+  /** The hopper paid a coin back (change or refund). */
+  DISPENSED: 'DISPENSED',
+} as const;
+export type CoinEventKind = (typeof CoinEventKind)[keyof typeof CoinEventKind];
 
 export const PaymentStatus = {
   PENDING: 'PENDING',
