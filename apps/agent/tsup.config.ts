@@ -1,12 +1,15 @@
 import { defineConfig } from 'tsup';
 
-// One CommonJS bundle (shared package inlined): the input @yao-pkg/pkg turns into an .exe (Phase 4).
+// One self-contained CommonJS file (every dependency inlined): the input of @yao-pkg/pkg,
+// which turns it into printbox-agent.exe.
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['cjs'],
   target: 'node20',
   platform: 'node',
-  noExternal: ['@printbox/shared', 'zod'],
+  noExternal: [/.*/],
+  // Optional native accelerators of `ws`, loaded in try/catch: not needed.
+  external: ['bufferutil', 'utf-8-validate'],
   sourcemap: true,
   clean: true,
 });

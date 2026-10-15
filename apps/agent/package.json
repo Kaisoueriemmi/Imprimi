@@ -4,25 +4,34 @@
   "private": true,
   "description": "PrintBox print agent: runs as a Windows service next to the kiosk printer.",
   "bin": {
-    "printbox-agent": "dist/index.cjs"
+    "printbox-agent": "dist/index.js"
   },
   "scripts": {
     "build": "tsup",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.cjs",
+    "start": "node dist/index.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "package": "tsup && pkg dist/index.js --targets node22-win-x64 --output bin/printbox-agent.exe --compress GZip"
   },
   "dependencies": {
     "@printbox/shared": "workspace:*",
+    "pino": "^9.14.0",
+    "socket.io-client": "^4.8.4",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
+    "@yao-pkg/pkg": "^6.23.0",
+    "pdf-lib": "^1.17.1",
+    "socket.io": "^4.8.4",
     "tsup": "^8.5.1",
     "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "vitest": "^3.2.7"
+  },
+  "pkg": {
+    "assets": []
   }
 }
