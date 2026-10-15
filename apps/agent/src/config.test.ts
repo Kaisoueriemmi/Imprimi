@@ -12,8 +12,14 @@ const valid = {
 };
 
 describe('agent config', () => {
-  it('accepts a valid config', () => {
-    expect(parseAgentConfig(valid)).toEqual(valid);
+  it('accepts a minimal config and applies safe defaults', () => {
+    expect(parseAgentConfig(valid)).toMatchObject({
+      ...valid,
+      printer: 'windows',
+      dataDir: 'data',
+      logLevel: 'info',
+      coinDevice: { driver: 'none', simulatorPort: 7575 },
+    });
   });
 
   it('lists invalid fields without echoing the key', () => {
@@ -27,10 +33,12 @@ describe('agent config', () => {
     }
   });
 
-  it('loads a file saved with a UTF-8 BOM', async () => {
+  it('loads a file saved with a UTF-8 BOM and resolves dataDir next to it', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'printbox-agent-'));
     const file = join(dir, 'agent.config.json');
-    await writeFile(file, `\uFEFF${JSON.stringify(valid)}`, 'utf8');
-    await expect(loadAgentConfig(file)).resolves.toEqual(valid);
+    await writeFile(file, String.fromCharCode(0xfeff) + JSON.stringify(valid), 'utf8');
+    const config = await loadAgentConfig(file);
+    expect(config.kioskId).toBe('demo-kiosk');
+    expect(config.dataDir).toBe(join(dir, 'data'));
   });
 });
