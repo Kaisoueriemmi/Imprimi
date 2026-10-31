@@ -1,0 +1,101 @@
+{
+  "customer": {
+    "language": "Language",
+    "loading": "Loading…",
+    "welcome": {
+      "title": "Print from your phone",
+      "kiosk": "Kiosk: {name}",
+      "steps": "Send your document, choose your options, pay at the kiosk with coins.",
+      "start": "Start",
+      "privacy": "Your file is deleted as soon as it is printed."
+    },
+    "errors": {
+      "QR_EXPIRED": "This QR code has expired. Scan the QR code on the kiosk again.",
+      "SESSION_EXPIRED": "Session expired. Scan the QR code on the kiosk again.",
+      "FILE_TOO_LARGE": "File too large (20 MB maximum).",
+      "UNSUPPORTED_FILE_TYPE": "Unsupported format: PDF, JPG, PNG or Word.",
+      "TOO_MANY_JOBS": "Maximum number of documents reached. Scan the QR code again.",
+      "KIOSK_BUSY": "Another customer is paying at the kiosk. Try again in a moment.",
+      "INVALID_PAGE_RANGE": "Invalid pages. Example: 1-3,5",
+      "OPTION_UNAVAILABLE": "Option not available on this kiosk.",
+      "RATE_LIMITED": "Too many attempts, please wait a moment.",
+      "NETWORK": "Cannot connect. Check your network and try again.",
+      "generic": "Something went wrong. Please try again.",
+      "retry": "Try again",
+      "conversion": {
+        "TOO_MANY_PAGES": "Document too long (50 pages maximum).",
+        "PDF_ENCRYPTED": "This PDF is password-protected.",
+        "CORRUPTED_FILE": "This file cannot be read.",
+        "CONVERSION_FAILED": "This document could not be prepared."
+      }
+    },
+    "upload": {
+      "title": "Choose your document",
+      "formats": "PDF, photo or Word · 20 MB and 50 pages maximum",
+      "pick": "Choose a file",
+      "camera": "Take a photo of a document",
+      "drop": "or drop it here",
+      "uploading": "Sending… {percent}%",
+      "preparing": "Preparing the document…"
+    },
+    "preview": {
+      "title": "Preview",
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "noThumbnail": "Preview not available",
+      "continue": "Continue",
+      "change": "Choose another document",
+      "alt": "Preview of the first page"
+    },
+    "options": {
+      "title": "Print options",
+      "copies": "Copies",
+      "fewer": "One copy less",
+      "more": "One more copy",
+      "colorMode": "Colour",
+      "bw": "Black & white",
+      "color": "Colour",
+      "duplex": "Double-sided",
+      "simplex": "Single-sided",
+      "pages": "Pages",
+      "pagesHint": "Leave empty to print everything. Example: 1-3,5",
+      "unavailable": "not available on this kiosk",
+      "total": "Total",
+      "printedPages": "{count, plural, one {# printed page} other {# printed pages}}",
+      "updating": "Updating the price…",
+      "validate": "Confirm · {price}",
+      "back": "Back to the preview",
+      "sides": "Sides"
+    },
+    "payment": {
+      "title": "Your code",
+      "codeHelp": "Keep this code: it identifies your print job.",
+      "amount": "To pay",
+      "payCoins": "Pay at the kiosk with coins",
+      "payCounter": "Pay at the counter",
+      "counterHelp": "Give this code and the amount at the counter. Printing starts once paid.",
+      "insert": "Insert your coins into the kiosk",
+      "remaining": "Left to pay: {amount}",
+      "timeLeft": "{seconds} s",
+      "change": "Change is given.",
+      "cancelCoins": "Cancel the coin payment",
+      "cancelJob": "Cancel printing",
+      "cancelled": "Payment cancelled: collect your coins from the kiosk.",
+      "received": "Inserted: {amount}",
+      "cancelConfirm": "Cancel printing? Your code will no longer be valid."
+    },
+    "tracking": {
+      "PAID": "Payment received",
+      "QUEUED": "In the queue",
+      "PRINTING": "Printing…",
+      "PRINTED": "Printed ✓ — collect your pages",
+      "FAILED": "Printing failed. Please go to the counter with your code.",
+      "CANCELLED": "Printing cancelled.",
+      "EXPIRED": "Time limit exceeded: the order has expired.",
+      "change": "Change given by the kiosk: {amount}",
+      "code": "Code {code}",
+      "another": "Print another document",
+      "done": "Printed",
+      "offline": "Connection lost — retrying…"
+    }
+  }
+}

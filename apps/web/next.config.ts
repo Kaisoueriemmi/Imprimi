@@ -1,5 +1,8 @@
 import path from 'node:path';
 import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   // Self-contained server bundle, only for the Docker image: building it needs symlinks,
@@ -12,4 +15,4 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

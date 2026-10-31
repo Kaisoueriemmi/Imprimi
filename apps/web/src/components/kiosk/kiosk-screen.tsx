@@ -227,7 +227,10 @@ export function KioskScreen({ kioskId }: { kioskId: string }) {
   const qrUrl = qr.status === 'ready' && Date.parse(qr.qr.expiresAt) > now ? qr.qr.url : null;
 
   return (
-    <main className="relative flex h-dvh w-full cursor-none select-none overflow-hidden bg-slate-950 text-white portrait:flex-col">
+    <main
+      dir="ltr"
+      className="relative flex h-dvh w-full cursor-none select-none overflow-hidden bg-slate-950 text-white portrait:flex-col"
+    >
       <section className="flex flex-col items-center justify-center gap-6 p-[3vmin] landscape:w-[50%] portrait:h-[55%]">
         <div className="aspect-square h-[min(68vh,44vw)] rounded-[2rem] bg-white p-[2vmin] shadow-2xl portrait:h-[min(42vh,80vw)]">
           {qrUrl ? (

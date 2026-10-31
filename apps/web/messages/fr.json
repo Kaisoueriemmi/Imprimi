@@ -1,0 +1,101 @@
+{
+  "customer": {
+    "language": "Langue",
+    "loading": "Chargement…",
+    "welcome": {
+      "title": "Imprimez depuis votre téléphone",
+      "kiosk": "Borne : {name}",
+      "steps": "Envoyez votre document, choisissez vos options, payez à la borne en pièces.",
+      "start": "Commencer",
+      "privacy": "Votre fichier est supprimé dès l'impression."
+    },
+    "errors": {
+      "QR_EXPIRED": "Ce QR code a expiré. Rescannez le QR sur la borne.",
+      "SESSION_EXPIRED": "Session expirée. Rescannez le QR sur la borne.",
+      "FILE_TOO_LARGE": "Fichier trop volumineux (20 Mo maximum).",
+      "UNSUPPORTED_FILE_TYPE": "Format non pris en charge : PDF, JPG, PNG ou Word.",
+      "TOO_MANY_JOBS": "Nombre maximal de documents atteint. Rescannez le QR.",
+      "KIOSK_BUSY": "Un autre client paie à la borne. Réessayez dans un instant.",
+      "INVALID_PAGE_RANGE": "Pages invalides. Exemple : 1-3,5",
+      "OPTION_UNAVAILABLE": "Option indisponible sur cette borne.",
+      "RATE_LIMITED": "Trop de tentatives, patientez un instant.",
+      "NETWORK": "Connexion impossible. Vérifiez votre réseau et réessayez.",
+      "generic": "Une erreur est survenue. Réessayez.",
+      "retry": "Réessayer",
+      "conversion": {
+        "TOO_MANY_PAGES": "Document trop long (50 pages maximum).",
+        "PDF_ENCRYPTED": "Ce PDF est protégé par un mot de passe.",
+        "CORRUPTED_FILE": "Ce fichier est illisible.",
+        "CONVERSION_FAILED": "Impossible de préparer ce document."
+      }
+    },
+    "upload": {
+      "title": "Choisissez votre document",
+      "formats": "PDF, photo ou Word · 20 Mo et 50 pages maximum",
+      "pick": "Choisir un fichier",
+      "camera": "Photographier un document",
+      "drop": "ou déposez-le ici",
+      "uploading": "Envoi… {percent} %",
+      "preparing": "Préparation du document…"
+    },
+    "preview": {
+      "title": "Aperçu",
+      "pages": "{count, plural, one {# page} other {# pages}}",
+      "noThumbnail": "Aperçu indisponible",
+      "continue": "Continuer",
+      "change": "Changer de document",
+      "alt": "Aperçu de la première page"
+    },
+    "options": {
+      "title": "Options d'impression",
+      "copies": "Copies",
+      "fewer": "Une copie de moins",
+      "more": "Une copie de plus",
+      "colorMode": "Couleur",
+      "bw": "Noir & blanc",
+      "color": "Couleur",
+      "duplex": "Recto-verso",
+      "simplex": "Recto",
+      "pages": "Pages",
+      "pagesHint": "Laissez vide pour tout imprimer. Exemple : 1-3,5",
+      "unavailable": "indisponible sur cette borne",
+      "total": "Total",
+      "printedPages": "{count, plural, one {# page imprimée} other {# pages imprimées}}",
+      "updating": "Calcul du prix…",
+      "validate": "Valider · {price}",
+      "back": "Retour à l’aperçu",
+      "sides": "Impression"
+    },
+    "payment": {
+      "title": "Votre code",
+      "codeHelp": "Gardez ce code : il identifie votre impression.",
+      "amount": "À payer",
+      "payCoins": "Payer à la borne en pièces",
+      "payCounter": "Payer au comptoir",
+      "counterHelp": "Donnez ce code et le montant au comptoir. L'impression démarre dès l'encaissement.",
+      "insert": "Insérez vos pièces dans la borne",
+      "remaining": "Reste à payer : {amount}",
+      "timeLeft": "{seconds} s",
+      "change": "La machine rend la monnaie.",
+      "cancelCoins": "Annuler le paiement en pièces",
+      "cancelJob": "Annuler l'impression",
+      "cancelled": "Paiement annulé : récupérez vos pièces dans la borne.",
+      "received": "Inséré : {amount}",
+      "cancelConfirm": "Annuler l’impression ? Votre code ne sera plus valable."
+    },
+    "tracking": {
+      "PAID": "Paiement reçu",
+      "QUEUED": "En file d'attente",
+      "PRINTING": "Impression en cours…",
+      "PRINTED": "Imprimé ✓ — récupérez vos feuilles",
+      "FAILED": "L'impression a échoué. Adressez-vous au comptoir avec votre code.",
+      "CANCELLED": "Impression annulée.",
+      "EXPIRED": "Délai dépassé : la commande a expiré.",
+      "change": "Monnaie rendue par la borne : {amount}",
+      "code": "Code {code}",
+      "another": "Imprimer un autre document",
+      "done": "Imprimé",
+      "offline": "Connexion perdue — nouvelle tentative…"
+    }
+  }
+}

@@ -12,11 +12,16 @@
   },
   "dependencies": {
     "@printbox/shared": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.57.0",
     "next": "15.5.28",
+    "next-intl": "^4.14.9",
     "qrcode": "^1.5.4",
     "react": "19.1.10",
     "react-dom": "19.1.10",
     "socket.io-client": "^4.8.4",
+    "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
