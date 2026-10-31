@@ -394,3 +394,50 @@ Socket.IO applique le même CORS strict que l'API (adaptateur `ConfiguredIoAdapt
 
 L'écran de borne est une mise en page sur mesure sans composants de formulaire ; shadcn/ui sera
 initialisé avec la web app client (formulaires, boutons, dialogues).
+
+## Phase 6 — Web app client (mobile)
+
+### D52. Une seule page client, sans routage de langue
+
+`/k/<kioskId>?t=<jeton>` est l'URL encodée dans le QR. Une seule page (`CustomerApp`) enchaîne
+accueil → upload → aperçu → options → code et paiement → suivi : pas de navigation réseau
+entre les étapes (4G faible). La langue vient du cookie `NEXT_LOCALE`, sinon
+d'`Accept-Language`, sinon français (next-intl sans préfixe d'URL : l'URL du QR reste courte
+et identique pour tous). Le sélecteur de langue pose le cookie puis `router.refresh()` : textes
+et `dir="rtl"` changent sans perdre l'étape en cours.
+
+### D53. Jeton QR retiré de l'URL, session dans l'onglet
+
+Le jeton est échangé contre une session puis retiré de la barre d'adresse
+(`history.replaceState(null, …)`, état `null` pour que le routeur Next ne le remette pas) ;
+`referrer: no-referrer`. La session et le job suivi sont gardés en `sessionStorage`
+(`printbox.session.<kioskId>`) : un rechargement reprend où en était le client, fermer l'onglet
+les oublie. Une session à moins d'une minute de l'expiration n'est pas reprise.
+
+### D54. Temps réel : Socket.IO `/clients` + repli en polling
+
+Le téléphone s'authentifie avec le jeton de session et s'abonne à son job (`job:subscribe`,
+room `job:<id>`, ré-abonnement à chaque reconnexion) ; l'API pousse le `JobView` complet,
+regroupé sur 100 ms. La conversion ne change pas le statut (et tourne dans le worker en
+production) : elle est suivie par polling toutes les 1,5 s ; si le socket tombe, polling
+toutes les 5 s jusqu'à un statut final.
+
+### D55. Photos réduites dans le navigateur
+
+Une photo JPEG/PNG de plus de 1,5 Mo est redimensionnée (côté long ≤ 2480 px = A4 à 300 dpi,
+orientation EXIF appliquée, fond blanc) et réencodée en JPEG 85 % avant l'envoi ; on garde
+l'original si le résultat n'est pas plus petit. Moins de données sur 4G, même qualité imprimée.
+
+### D56. Options : validation locale, sauvegarde différée
+
+La plage de pages est validée sur le téléphone avec `parsePageRange` (le même code que l'API) ;
+les options valides sont envoyées 400 ms après la dernière modification. Le prix affiché est
+toujours celui calculé par le serveur ; « Valider » reste désactivé pendant une mise à jour ou
+si la saisie est invalide.
+
+### D57. Paiement : pièces en premier, comptoir en secours
+
+Le checkout émet le code de retrait (affiché en grand, seulement sur le téléphone). Le bouton
+principal réserve le monnayeur ; le reste à payer et le délai (prolongé à chaque pièce) se
+mettent à jour en direct. Le paiement au comptoir est toujours expliqué en dessous. Annuler
+l'impression demande une confirmation, les pièces déjà insérées sont rendues par la machine.
