@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AgentsModule } from './agents/agents.module';
+import { ClientUpdatesModule } from './client-updates/client-updates.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { bearerToken } from './common/request-context';
 import { CoreModule } from './core.module';
@@ -42,6 +43,7 @@ function sessionTracker(req: Record<string, unknown>): string {
     MaintenanceModule,
     AgentsModule,
     KioskScreenModule,
+    ClientUpdatesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
