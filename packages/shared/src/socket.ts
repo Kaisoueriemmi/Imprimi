@@ -44,9 +44,20 @@ export const AgentEvent = {
   COIN_DISPENSE: 'coin:dispense',
 } as const;
 
+/** Customer phone ↔ server (`/clients` namespace). */
 export const ClientEvent = {
+  /** Phone → server, with ack: follow a job of this session (room per job id). */
+  SUBSCRIBE: 'job:subscribe',
+  /** Server → phone: the job changed; payload is the full `JobView`. */
   JOB_STATUS: 'job:status',
 } as const;
+
+/** Socket.IO handshake `auth` of the customer phone. */
+export const clientAuthSchema = z.object({
+  sessionToken: z.string().min(10).max(4096),
+});
+
+export const jobSubscribeSchema = z.object({ jobId: idSchema });
 
 export const KioskEvent = {
   STATE: 'kiosk:state',
