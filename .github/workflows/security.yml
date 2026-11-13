@@ -30,8 +30,8 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect \
             --source /repo --redact --report-format sarif --report-path /repo/gitleaks.sarif
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('gitleaks.sarif') != ''
         with:
           sarif_file: gitleaks.sarif
           category: gitleaks
@@ -47,8 +47,8 @@ jobs:
       - run: pip install --quiet semgrep
       - name: Scan
         run: semgrep scan --config p/ci --config p/typescript --config p/nodejs --sarif --output semgrep.sarif
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('semgrep.sarif') != ''
         with:
           sarif_file: semgrep.sarif
           category: semgrep
@@ -77,8 +77,8 @@ jobs:
           docker run --rm -v "$PWD:/src" -v "$HOME/dc-data:/usr/share/dependency-check/data" \
             owasp/dependency-check:latest --scan /src --format SARIF --format HTML --out /src/reports \
             --exclude '**/node_modules/**' ${NVD_API_KEY:+--nvdApiKey "$NVD_API_KEY"}
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('reports/dependency-check-report.sarif') != ''
         with:
           sarif_file: reports/dependency-check-report.sarif
           category: dependency-check
@@ -101,8 +101,8 @@ jobs:
           docker run --rm -v "$PWD:/src" aquasec/trivy:latest fs \
             --scanners vuln,secret,misconfig --severity HIGH,CRITICAL \
             --format sarif --output /src/trivy-fs.sarif /src
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('trivy-fs.sarif') != ''
         with:
           sarif_file: trivy-fs.sarif
           category: trivy-fs
@@ -118,8 +118,8 @@ jobs:
       - run: pip install --quiet checkov
       - name: Scan Dockerfiles et workflows
         run: checkov -d . --framework dockerfile github_actions --soft-fail --output sarif --output-file-path reports
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('reports/results_sarif.sarif') != ''
         with:
           sarif_file: reports/results_sarif.sarif
           category: checkov
@@ -158,8 +158,8 @@ jobs:
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/out" aquasec/trivy:latest image \
             --severity HIGH,CRITICAL --format sarif --output /out/trivy-image.sarif "$IMAGE:$TAG"
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('trivy-image.sarif') != ''
         with:
           sarif_file: trivy-image.sarif
           category: trivy-image-${{ matrix.app }}
