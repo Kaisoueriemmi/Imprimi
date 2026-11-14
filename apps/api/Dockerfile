@@ -27,10 +27,13 @@ FROM base AS runtime
 # Fonts: Liberation + Carlito/Caladea (metric-compatible with Arial/Times/Calibri/Cambria, so
 # Word layouts keep their pagination) and Noto for Arabic.
 RUN apt-get update \
+  && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
     libreoffice-writer-nogui poppler-utils \
     fonts-liberation2 fonts-crosextra-carlito fonts-crosextra-caladea fonts-dejavu-core fonts-noto-core \
   && rm -rf /var/lib/apt/lists/*
+# npm (et son tar embarqué) ne sert pas à l'exécution : retiré pour réduire la surface d'attaque.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 ENV NODE_ENV=production \
   HOME=/tmp
 WORKDIR /app
